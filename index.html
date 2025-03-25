@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Clone</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+        }
+        .phone {
+            width: 375px;
+            height: 667px;
+            background: white;
+            border-radius: 30px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        .header {
+            background: red;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            font-size: 22px;
+        }
+        .search-bar {
+            padding: 10px;
+        }
+        .search-bar input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            outline: none;
+            font-size: 14px;
+        }
+        .restaurant-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            background: #f5f5f5;
+        }
+        .restaurant {
+            background: white;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .restaurant img {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            margin-right: 10px;
+        }
+        .restaurant-info {
+            flex: 1;
+        }
+        .restaurant-info span {
+            display: block;
+            font-size: 12px;
+            color: #666;
+        }
+        .bottom-nav {
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            border-top: 1px solid #ccc;
+        }
+        .bottom-nav button {
+            background: none;
+            border: none;
+            font-size: 14px;
+            color: #666;
+            cursor: pointer;
+        }
+        .cart {
+            position: absolute;
+            bottom: 60px;
+            right: 10px;
+            background: red;
+            color: white;
+            padding: 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="phone">
+    <div class="header">iFood</div>
+    <div class="search-bar">
+        <input type="text" placeholder="Buscar restaurantes..." id="search">
+    </div>
+    <div class="restaurant-list" id="restaurant-list"></div>
+    <div class="cart" id="cart">Carrinho (0)</div>
+    <div class="bottom-nav">
+        <button>Início</button>
+        <button>Pedidos</button>
+    </div>
+</div>
+
+<script>
+    // Lista de restaurantes fictícios
+    const restaurantes = [
+        { nome: "Pizza do Chef", tipo: "Pizzaria", img: "https://imgs.search.brave.com/nY2SaLLZza-Dgt4L-JqYgDpeIpp6NQQNm6N03rliLMA/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS50aW1lb3V0LmNv/bS9pbWFnZXMvMTA2/MTU1Njk2Lzc1MC80/MjIvaW1hZ2UuanBn" },
+        { nome: "Hamburgueria Smash", tipo: "Hambúrgueres", img: "https://imgs.search.brave.com/if3tVMX9SVdvpL7dTctimBbdDCia_LN4AiCRIrbIBE0/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9idWxs/Z3Vlci5jb20vd3At/Y29udGVudC91cGxv/YWRzLzIwMjQvMTAv/cGVzc29hLXNlZ3Vy/YW5kby1idWxsZ3Vl/ci53ZWJw" },
+        { nome: "Sushi Express", tipo: "Comida Japonesa", img: "https://imgs.search.brave.com/tv9L9ct6hYLQYQctAAfJt6pjD1yXYEyx6G8GZC22XyU/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly90NC5m/dGNkbi5uZXQvanBn/LzAyLzI5Lzg4LzI3/LzM2MF9GXzIyOTg4/Mjc2MV9aTnJFSVo4/YVlIN1JLcVVSd3NS/ZlJMODg4UUYwNEZl/VC5qcGc" },
+        { nome: "Churrasco Gaúcho", tipo: "Carnes", img: "https://imgs.search.brave.com/vMfaUITpbVdcjzLMgm6C8-YuBrrsOLmFC7Zl4LyYKiQ/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9iZm1l/YXQuY29tLmJyL3dw/LWNvbnRlbnQvdXBs/b2Fkcy8yMDI0LzA0/L3NpdGVfYmZtZWF0/X2ltZ19wb3N0MV8z/LndlYnA" },
+        { nome: "Deposito do Jorginho", tipo: "Bebidas", img: "https://imgs.search.brave.com/96EwmFzYKvDWpJEupVOb83l-vHVClTGSMnUcbpWr3FY/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jYXNh/ZWNvbnN0cnVjYW8u/b3JnL3dwLWNvbnRl/bnQvdXBsb2Fkcy8y/MDIxLzAzL2JlYmlk/YXMtYWxjb29saWNh/cy1uby1zZXBvc2l0/by5qcGc" }
+    ];
+
+    // Função para carregar restaurantes na lista
+    function carregarRestaurantes() {
+        const lista = document.getElementById("restaurant-list");
+        lista.innerHTML = ""; // Limpa antes de adicionar
+
+        restaurantes.forEach(restaurante => {
+            let div = document.createElement("div");
+            div.classList.add("restaurant");
+            div.innerHTML = `
+                <img src="${restaurante.img}" alt="${restaurante.nome}">
+                <div class="restaurant-info">
+                    <strong>${restaurante.nome}</strong>
+                    <span>${restaurante.tipo}</span>
+                </div>
+            `;
+            lista.appendChild(div);
+        });
+    }
+
+    // Filtrando restaurantes com base na pesquisa
+    document.getElementById("search").addEventListener("input", function() {
+        const filtro = this.value.toLowerCase();
+        const lista = document.getElementById("restaurant-list");
+        lista.innerHTML = "";
+
+        restaurantes
+            .filter(restaurante => restaurante.nome.toLowerCase().includes(filtro))
+            .forEach(restaurante => {
+                let div = document.createElement("div");
+                div.classList.add("restaurant");
+                div.innerHTML = `
+                    <img src="${restaurante.img}" alt="${restaurante.nome}">
+                    <div class="restaurant-info">
+                        <strong>${restaurante.nome}</strong>
+                        <span>${restaurante.tipo}</span>
+                    </div>
+                `;
+                lista.appendChild(div);
+            });
+    });
+
+    carregarRestaurantes();
+</script>
+
+</body>
+</html>
